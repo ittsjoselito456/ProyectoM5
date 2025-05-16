@@ -1,0 +1,56 @@
+# Nom del workflow que apareixerà a la pestanya Actions de GitHub
+name: Calculator CI Pipeline
+
+# Defineix quan s'ha d'executar aquest workflow
+on:
+  push:
+    branches: [ main ] # S'executa cada cop que es fa push a la branca 'main'
+    # Podries afegir 'master' si la teva branca principal es diu així: branches: [ main, master ]
+  # pull_request:
+    # branches: [ main ] # També es podria executar en Pull Requests a 'main'
+
+# Defineix els treballs (jobs) que s'executaran en aquest workflow
+jobs:
+  # Nom del treball (pot ser qualsevol nom descriptiu)
+  test_and_build:
+    # Especifica el tipus de màquina virtual on s'executarà el treball
+    runs-on: ubuntu-latest # Utilitza l'última versió estable d'Ubuntu
+
+    # Defineix els passos (steps) que componen el treball
+    steps:
+    # Pas 1: Descarregar el codi del repositori
+    - name: Checkout code
+      uses: actions/checkout@v4 # Acció predefinida de GitHub per descarregar el codi
+
+    # Pas 2: Configurar l'entorn de Java (JDK)
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17' # Especifica la versió de Java (ha de coincidir amb pom.xml i Dockerfile)
+        distribution: 'temurin' # Tipus de distribució de JDK (Temurin és una opció popular i fiable)
+        cache: 'maven' # Habilita la cache per a les dependències de Maven per accelerar construccions futures
+
+    # Pas 3: Executar els tests amb Maven
+    - name: Run tests with Maven
+      # Executa el comandament 'mvn test', que compila el codi i executa tots els tests JUnit
+      # Si algun test falla, aquest pas fallarà i el workflow s'aturarà (tret que es configuri el contrari)
+      run: mvn test
+
+    # Pas 4: Construir la imatge Docker (només si els tests han passat)
+    - name: Build Docker image
+      # Condició: Aquest pas només s'executa si el pas anterior ('Run tests with Maven') ha tingut èxit
+      if: success()
+      # Utilitza l'acció oficial de Docker per construir imatges
+      uses: docker/build-push-action@v5 # Versió actualitzada de l'acció
+      with:
+        context: . # El context de construcció és el directori arrel del repositori
+        file: ./Dockerfile # Especifica la ruta al Dockerfile
+        push: false # No puja la imatge a cap registre (només la construeix)
+                    # Canvia a 'true' si vols pujar-la a Docker Hub o un altre registre
+        tags: ${{ github.repository_owner }}/calculator-app:latest # Etiqueta la imatge construïda
+        # Exemple d'etiqueta: <nom_usuari_github>/calculator-app:latest
+        # Considera afegir etiquetes més específiques, com el SHA del commit:
+        # tags: |
+        #   ${{ github.repository_owner }}/calculator-app:latest
+        #   ${{ github.repository_owner }}/calculator-app:${{ github.sha }}
+
