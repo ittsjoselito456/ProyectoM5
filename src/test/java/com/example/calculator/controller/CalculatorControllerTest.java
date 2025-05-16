@@ -29,7 +29,7 @@ class CalculatorControllerTest {
                 .andExpect(jsonPath("$.operation").value("add"))
                 .andExpect(jsonPath("$.a").value(5.0))
                 .andExpect(jsonPath("$.b").value(3.0))
-                .andExpect(jsonPath("$.result").value(8.0));
+                .andExpect(jsonPath("$.result").value(9.0)); // <-- Fallará intencionalmente (debería ser 8.0)
     }
 
     @Test
